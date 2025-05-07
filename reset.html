@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reset System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .container {
+      background-color: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+    
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+    
+    button {
+      padding: 10px 15px;
+      background-color: #d9534f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    
+    button.secondary {
+      background-color: #5bc0de;
+    }
+    
+    #message {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    
+    .success {
+      background-color: #dff0d8;
+      color: #3c763d;
+      border: 1px solid #d6e9c6;
+    }
+    
+    .error {
+      background-color: #f2dede;
+      color: #a94442;
+      border: 1px solid #ebccd1;
+    }
+    
+    .data-preview {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      overflow-x: auto;
+      border: 1px solid #ddd;
+    }
+    
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>System Reset Utility</h1>
+    <p>Use this utility to reset or initialize the Criminal Record Management System's data.</p>
+    
+    <button id="resetButton">Reset All Data</button>
+    <button id="initButton" class="secondary">Initialize Default Users</button>
+    <button id="viewButton" class="secondary">View Current Data</button>
+    <button id="backButton" class="secondary">Back to Login</button>
+    
+    <div id="message" style="display: none;"></div>
+    
+    <div id="dataPreview" class="data-preview" style="display: none;">
+      <h3>Current LocalStorage Data:</h3>
+      <pre id="dataContent"></pre>
+    </div>
+  </div>
+  
+  <script>
+    document.getElementById('resetButton').addEventListener('click', function() {
+      if (confirm('WARNING: This will delete ALL data including users and records. Continue?')) {
+        localStorage.clear();
+        showMessage('All data has been reset successfully!', 'success');
+      }
+    });
+    
+    document.getElementById('initButton').addEventListener('click', function() {
+      // Initialize default users
+      const defaultUsers = [
+        { username: "admin", password: "admin123", role: "admin" },
+        { username: "officer", password: "officer123", role: "user" }
+      ];
+      localStorage.setItem("users", JSON.stringify(defaultUsers));
+      
+      // Initialize empty records array if it doesn't exist
+      if (!localStorage.getItem("records")) {
+        localStorage.setItem("records", JSON.stringify([]));
+      }
+      
+      showMessage('Default users have been initialized successfully!', 'success');
+      refreshDataPreview();
+    });
+    
+    document.getElementById('viewButton').addEventListener('click', function() {
+      refreshDataPreview();
+      document.getElementById('dataPreview').style.display = 'block';
+    });
+    
+    document.getElementById('backButton').addEventListener('click', function() {
+      window.location.href = 'HOME.html';
+    });
+    
+    function refreshDataPreview() {
+      const content = document.getElementById('dataContent');
+      let dataStr = '';
+      
+      // Show users
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      dataStr += 'USERS:\n';
+      dataStr += JSON.stringify(users, null, 2);
+      dataStr += '\n\n';
+      
+      // Show records count
+      const records = JSON.parse(localStorage.getItem('records') || '[]');
+      dataStr += 'RECORDS: ' + records.length + ' total\n';
+      if (records.length > 0) {
+        dataStr += JSON.stringify(records.slice(0, 3), null, 2);
+        if (records.length > 3) {
+          dataStr += '\n... and ' + (records.length - 3) + ' more records';
+        }
+      }
+      
+      // Show logged in user if any
+      const loggedInUser = localStorage.getItem('loggedInUser');
+      if (loggedInUser) {
+        dataStr += '\n\nCURRENT LOGGED IN USER:\n';
+        dataStr += JSON.stringify(JSON.parse(loggedInUser), null, 2);
+      }
+      
+      content.textContent = dataStr;
+    }
+    
+    function showMessage(message, type) {
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = message;
+      messageDiv.className = type;
+      messageDiv.style.display = 'block';
+      
+      // Auto-hide after 5 seconds
+      setTimeout(function() {
+        messageDiv.style.display = 'none';
+      }, 5000);
+      
+      // Refresh data preview if it's open
+      if (document.getElementById('dataPreview').style.display === 'block') {
+        refreshDataPreview();
+      }
+    }
+  </script>
+</body>
+</html>

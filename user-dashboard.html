@@ -1,0 +1,141 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>RPNGC Officer Dashboard</title>
+  <link rel="stylesheet" type="text/css" href="css/bootstrap.css" />
+  <style>
+    body { font-family: 'Roboto', sans-serif; background-color: #ffffff; }
+    .header_section { background-color: #011242; color: white; padding: 15px 0; }
+    .navbar-brand img { width: 50px; }
+    .dashboard-container { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; }
+    .footer_section { background-color: #011242; color: white; text-align: center; padding: 20px 0; }
+    .search-container { margin-bottom: 20px; }
+    .search-container input { width: 70%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+    .search-container button { padding: 10px 20px; background-color: #011242; color: white; border: none; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    table, th, td { border: 1px solid #ddd; }
+    th, td { padding: 12px; text-align: left; }
+    th { background-color: #011242; color: white; }
+    .pagination { display: flex; justify-content: center; margin-top: 20px; }
+    .pagination button { padding: 8px 16px; margin: 0 5px; background-color: #011242; color: white; border: none; border-radius: 4px; }
+    .record-details { display: none; padding: 20px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 5px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <header class="header_section">
+    <div class="container">
+      <nav class="navbar navbar-expand-lg">
+        <a class="navbar-brand" href="#"><img src="images/logo.png" alt="RPNGC Logo" /></a>
+        <h3><b>ROYAL PAPUA NEW GUINEA CONSTABULARY</b></h3>
+        <div class="ml-auto text-white">Welcome, <span id="userDisplay">Officer</span> <button onclick="logout()" class="btn btn-danger btn-sm ml-3">Logout</button></div>
+      </nav>
+    </div>
+  </header>
+
+  <section class="container layout_padding">
+    <div class="dashboard-container">
+      <h2>Criminal Records Dashboard</h2>
+      <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Search by name, ID, or charges...">
+        <button onclick="searchRecords()">Search</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Name</th><th>DOB</th><th>Charges</th><th>Arrest Date</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody id="recordsList"></tbody>
+      </table>
+      <div class="pagination" id="pagination"></div>
+      <div id="recordDetails" class="record-details">
+        <h3>Record Details</h3>
+        <div id="detailsContent"></div>
+        <button onclick="closeDetails()">Close</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="container-fluid footer_section">
+    <p>Copyright &copy; 2025 All Rights Reserved By Maenduo Tech Solutions</p>
+  </section>
+
+  <script>
+    const RECORDS_PER_PAGE = 5;
+    let criminalRecords = [], currentPage = 1;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const user = JSON.parse(localStorage.getItem("loggedInUser"));
+      if (!user) return window.location.href = "index.html";
+      document.getElementById("userDisplay").textContent = user.username;
+      loadRecordsFromStorage();
+      displayRecords(1);
+    });
+
+    function logout() {
+      localStorage.removeItem("loggedInUser");
+      window.location.href = "index.html";
+    }
+
+    function loadRecordsFromStorage() {
+      criminalRecords = JSON.parse(localStorage.getItem("criminalRecords")) || [];
+    }
+
+    function displayRecords(page) {
+      loadRecordsFromStorage();
+      const start = (page - 1) * RECORDS_PER_PAGE;
+      const pageRecords = criminalRecords.slice(start, start + RECORDS_PER_PAGE);
+      const recordsList = document.getElementById("recordsList");
+      recordsList.innerHTML = pageRecords.map(r => `
+        <tr>
+          <td>${r.id}</td><td>${r.name}</td><td>${r.dob}</td><td>${r.charges}</td>
+          <td>${r.arrestDate}</td><td>${r.status}</td>
+          <td><button onclick="viewRecordDetails('${r.id}')">View Details</button></td>
+        </tr>`).join("") || "<tr><td colspan='7'>No records found</td></tr>";
+      setupPagination(criminalRecords.length);
+      currentPage = page;
+    }
+
+    function setupPagination(total) {
+      const pages = Math.ceil(total / RECORDS_PER_PAGE);
+      const pagination = document.getElementById("pagination");
+      pagination.innerHTML = Array.from({ length: pages }, (_, i) =>
+        `<button onclick="displayRecords(${i + 1})" class="${i + 1 === currentPage ? 'active' : ''}">${i + 1}</button>`
+      ).join("");
+    }
+
+    function searchRecords() {
+      const term = document.getElementById("searchInput").value.toLowerCase();
+      const filtered = criminalRecords.filter(r =>
+        r.name.toLowerCase().includes(term) || r.id.toLowerCase().includes(term) || r.charges.toLowerCase().includes(term)
+      );
+      const recordsList = document.getElementById("recordsList");
+      recordsList.innerHTML = filtered.map(r => `
+        <tr>
+          <td>${r.id}</td><td>${r.name}</td><td>${r.dob}</td><td>${r.charges}</td>
+          <td>${r.arrestDate}</td><td>${r.status}</td>
+          <td><button onclick="viewRecordDetails('${r.id}')">View Details</button></td>
+        </tr>`).join("") || "<tr><td colspan='7'>No matching records found</td></tr>";
+      document.getElementById("pagination").innerHTML = "";
+    }
+
+    function viewRecordDetails(id) {
+      const r = criminalRecords.find(r => r.id === id);
+      if (!r) return alert("Record not found");
+      document.getElementById("detailsContent").innerHTML = `
+        <p><strong>ID:</strong> ${r.id}</p><p><strong>Name:</strong> ${r.name}</p>
+        <p><strong>DOB:</strong> ${r.dob}</p><p><strong>Gender:</strong> ${r.gender}</p>
+        <p><strong>Address:</strong> ${r.address}</p><p><strong>Charges:</strong> ${r.charges}</p>
+        <p><strong>Arrest Date:</strong> ${r.arrestDate}</p><p><strong>Status:</strong> ${r.status}</p>
+        <p><strong>Case Details:</strong> ${r.caseDetails || "None"}</p>`;
+      document.getElementById("recordDetails").style.display = "block";
+    }
+
+    function closeDetails() {
+      document.getElementById("recordDetails").style.display = "none";
+    }
+  </script>
+</body>
+</html>
